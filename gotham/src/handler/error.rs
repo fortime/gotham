@@ -78,11 +78,7 @@ impl Debug for HandlerError {
 }
 
 impl Error for HandlerError {
-    fn description(&self) -> &str {
-        "handler failed to process request"
-    }
-
-    fn cause(&self) -> Option<&dyn Error> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         Some(&*self.cause)
     }
 }
