@@ -85,4 +85,9 @@ impl ResponseFinalizer {
 
         future::ok((state, res)).boxed()
     }
+
+    /// Check if the status code should be finalized.
+    pub fn need_finalize(&self, status_code: &StatusCode) -> bool {
+        self.data.get(status_code).is_some()
+    }
 }

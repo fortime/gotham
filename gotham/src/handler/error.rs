@@ -125,6 +125,11 @@ impl HandlerError {
             ..self
         }
     }
+
+    /// Return the status code of this error
+    pub fn status_code(&self) -> &StatusCode {
+        &self.status_code
+    }
 }
 
 impl IntoResponse for HandlerError {
@@ -136,7 +141,9 @@ impl IntoResponse for HandlerError {
             self.status_code
                 .canonical_reason()
                 .unwrap_or("(unregistered)",),
-            self.source().map(Error::description).unwrap_or("(none)"),
+            self.source()
+                .map(|e| e.to_string())
+                .unwrap_or("(none)".to_string()),
         );
 
         create_empty_response(state, self.status_code)

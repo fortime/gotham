@@ -181,19 +181,25 @@ impl Router {
     fn finalize_response(&self, result: Pin<Box<HandlerFuture>>) -> Pin<Box<HandlerFuture>> {
         let response_finalizer = self.data.response_finalizer.clone();
         result
-            .or_else(|(state, err)| {
-                trace!(
-                    "[{}] converting error into http response \
-                     during finalization: {:?}",
-                    request_id(&state),
-                    err
-                );
-                let response = err.into_response(&state);
-                future::ok((state, response))
-            })
-            .and_then(move |(state, res)| {
+            .then(move |res| {
+                let (state, response) = match res {
+                    Ok((state, response)) => (state, response),
+                    Err((state, err)) => {
+                        if !response_finalizer.need_finalize(err.status_code()) {
+                            return future::err((state, err)).boxed();
+                        }
+                        trace!(
+                            "[{}] converting error into http response \
+                             during finalization: {:?}",
+                            request_id(&state),
+                            err
+                        );
+                        let response = err.into_response(&state);
+                        (state, response)
+                    }
+                };
                 trace!("[{}] handler complete", request_id(&state));
-                response_finalizer.finalize(state, res)
+                response_finalizer.finalize(state, response)
             })
             .boxed()
     }
